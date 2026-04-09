@@ -1,8 +1,6 @@
 # Bayesian Spam Detector
 
-**Live Naïve Bayes Spam Filter** built from scratch with Flask + Python.
-
-**Assignment**: MAT-2226 Engineering Mathematics-IV Seminar (Group 1)
+Live Naïve Bayes Spam Filter built from scratch with Flask + Python.
 
 ### Features
 - Real SMS Spam Collection dataset (UCI)
