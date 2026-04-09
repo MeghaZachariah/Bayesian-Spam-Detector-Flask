@@ -1,48 +1,53 @@
-Real-Time Bayesian Spam Detector
-A Flask-Based Text Classification Engine
-This repository contains a professional-grade Spam Filtering system built using a custom Naïve Bayes engine. The project demonstrates the transition from raw, unstructured text to precise probabilistic classification.
+Bayesian Spam Detector
+A Real-Time Flask Application built from Scratch
+This repository features a professional-grade SMS Spam Filter developed as part of a Computer Science Engineering study on Bayesian Learning. Unlike standard implementations that rely on high-level libraries, this project features a custom inference engine built from first principles to demonstrate the mathematical rigor of the Naïve Bayes algorithm.
 
-Project Overview
-Developed as a Computer Science Engineering mini-project, this application uses the UCI SMS Spam Collection (5,572 messages) to identify spam signatures in real-time.
+🖥️ User Interface & Experience
+<p align="center">
+<img src="ss/image_b8e7c7.png" width="800" title="Bayesian Spam Detector Home">
+</p>
 
-Key Technical Features
-Custom Inference Engine: Implemented entirely from scratch in Python to handle Bayesian probability without high-level ML libraries.
+The application utilizes a professional, blackboard-themed Flask interface. This layout is designed for both high-stakes filtering and educational transparency, allowing users to select pre-set benchmarks or enter custom messages for real-time evaluation.
 
-Numerical Stability: Utilizes Log-Space Summation to prevent floating-point underflow during high-volume probability calculations.
+🔍 Explainable AI: The "Show Math" Panel
+<p align="center">
+<img src="ss/image_b8e7a5.png" width="800" title="Transparency Panel">
+</p>
+To ensure the model's logic is verifiable against manual calculations, I engineered a Transparency Panel. This feature bridges the gap between raw code and mathematical theory by providing a live trace of:
+Tokenization: The process of cleaning, lower-casing, and stripping noise from raw text.
+Per-Word Likelihoods: The specific probabilities ($P(W|Spam)$ and $P(W|Ham)$) calculated with Laplace Smoothing ($k=1$).
+Log-Space Summation: A demonstration of how the backend calculates posterior probabilities safely to prevent floating-point underflow.
 
-Laplace Smoothing: Ensures the model handles previously unseen words without resulting in zero-probability errors.
+📊 Performance & Evaluation 
+<p align="center">
+<img src="ss/image_b8e4e1.png" width="800" title="Model Performance Card">
+</p>
+The system was trained on the UCI SMS Spam Collection (5,572 messages) using an 80/20 stratified train-test split. The metrics below are generated live by the application:
+Accuracy: 98.3%
+Recall: 95.97% (Prioritized to ensure maximum detection of intrusive spam)
+Precision: 91.67%
+F1-Score: 93.77%
 
-Unbiased Prior: Configured with an unbiased 0.5 prior to ensure fair classification of incoming messages.
+🛠️ System Architecture
+<p align="center">
+<img src="ss/image_b8e808.png" width="300" title="Directory Structure">
+</p>
+The project is structured for modularity to ensure a clean separation between the inference engine and the frontend:
+app.py: The core Python script housing the custom Bayesian engine and Flask routes.
+templates/: HTML/CSS files for the Blackboard UI.
+SMSSpamCollection: The raw dataset used for training and testing.
+requirements.txt: Lists necessary dependencies (Flask, Pandas) for local setup.
 
-Transparent Logic: Features a "Show Math" Panel that breaks down the tokenization, per-word likelihoods, and final posterior calculation for the user.
-
-Tech Stack
-Backend: Python 3.10, Flask
-
-Environment: VS Code
-
-Dataset: UCI Machine Learning Repository (SMS Spam Collection v.1)
-
-Frontend: Blackboard-themed HTML/CSS
-
-Performance
-Accuracy: 95.52%
-
-Dataset Size: 5,572 Messages
-
-Preprocessing: Tokenization, Lower-casing, Special Character Removal (Bag-of-Words).
-
-Installation & Usage
-Clone the Repo:
+🚀 Quick Start
+Clone the Repository:
 
 Bash
 git clone https://github.com/MeghaZachariah/Bayesian-Spam-Detector-Flask.git
-Install Requirements:
+Install Dependencies:
 
 Bash
-pip install flask pandas
-Run the Server:
+pip install -r requirements.txt
+Run the Application:
 
 Bash
 python app.py
-Test the App: Visit http://127.0.0.1:5000 and enter messages like "Claim your prize now!" or "Meeting at 3 PM" to see the Bayesian logic in action.
