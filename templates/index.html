@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bayesian Spam Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Share+Tech+Mono&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg: #111418; --board: #1c2128; --surface: #242b36; --surface2: #2e3847;
+  --chalk: #e8e4d9; --chalk-dim: #8a9ab5; --chalk-faint: #3d4f6a;
+  --green: #5ec98b; --red: #e8635a; --amber: #f0b94a; --blue: #7bb3e8;
+  --border: rgba(232,228,217,0.08);
+  --mono: 'Share Tech Mono', monospace; --serif: 'Special Elite', serif; --sans: 'DM Sans', sans-serif;
+}
+* { box-sizing: border-box; margin:0; padding:0; }
+body { background: var(--bg); color: var(--chalk); font-family: var(--sans); min-height: 100vh; padding: 2rem 1rem; }
+.container { max-width: 920px; margin: 0 auto; }
+
+header { text-align: center; margin-bottom: 2rem; }
+header p { font-family: var(--mono); font-size: 12px; color: var(--chalk-dim); letter-spacing: 2px; text-transform: uppercase; }
+header h1 { font-family: var(--serif); font-size: 48px; margin: 8px 0; }
+
+.card { background: var(--board); border: 1px solid var(--border); border-radius: 16px; padding: 1.8rem; margin-bottom: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+
+.input-label { font-family: var(--mono); font-size: 11px; color: var(--chalk-dim); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+textarea#msgInput {
+  width: 100%; background: var(--surface); border: 1px solid var(--chalk-faint); border-radius: 12px;
+  color: var(--chalk); font-size: 17px; padding: 16px; min-height: 110px; resize: vertical; outline: none;
+}
+textarea#msgInput:focus { border-color: var(--blue); }
+
+.btn-row { display: flex; gap: 12px; margin-top: 12px; }
+button { font-family: var(--sans); font-size: 15px; padding: 12px 28px; border-radius: 10px; cursor: pointer; }
+#classifyBtn { background: var(--chalk); color: var(--bg); border: none; font-weight: 500; }
+#clearBtn { background: transparent; border: 1px solid var(--chalk-faint); color: var(--chalk-dim); }
+
+#resultSection { display: none; }
+.verdict-pct { font-size: 42px; font-family: var(--mono); line-height: 1; }
+.verdict-badge { display: inline-block; padding: 6px 20px; border-radius: 30px; font-size: 14px; font-family: var(--mono); margin-top: 8px; }
+
+.meter-bar-bg {
+  height: 18px; background: var(--surface2); border-radius: 9999px; position: relative; margin: 16px 0; overflow: hidden;
+}
+#hamFill, #spamFill {
+  position: absolute; top: 0; height: 100%; transition: width 0.6s ease;
+}
+#hamFill { background: var(--green); border-radius: 9999px 0 0 9999px; left: 0; }
+#spamFill { background: var(--red); border-radius: 0 9999px 9999px 0; right: 0; }
+
+.token-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.token { background: var(--surface2); color: var(--purple); padding: 4px 12px; border-radius: 6px; font-family: var(--mono); font-size: 13px; }
+
+.lk-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 13px; }
+.lk-table th, .lk-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+.lk-table th { color: var(--chalk-dim); font-size: 11px; }
+
+.formula-box { background: var(--surface); padding: 16px; border-radius: 12px; font-family: var(--mono); font-size: 13.5px; line-height: 1.8; white-space: pre-wrap; }
+
+.dataset-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+.dataset-col-head { font-family: var(--mono); font-size: 13px; margin-bottom: 10px; }
+.dataset-col-head.spam { color: var(--red); }
+.dataset-col-head.ham { color: var(--green); }
+.dataset-item { padding: 6px 0; cursor: pointer; color: var(--chalk-dim); transition: all 0.2s; }
+.dataset-item:hover { color: var(--chalk); padding-left: 8px; }
+
+.math-heading { font-family: var(--mono); font-size: 11px; color: var(--amber); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <p>PROBABILISTIC TEXT CLASSIFICATION • FLASK + PYTHON</p>
+    <h1>Bayesian Spam Detector</h1>
+    <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap; margin-top:12px;">
+      <span style="background:#242b36; padding:6px 14px; border-radius:9999px; font-size:12px; font-family:var(--mono);">Unbiased • P(S)=P(H)=0.5</span>
+      <span style="background:#242b36; padding:6px 14px; border-radius:9999px; font-size:12px; font-family:var(--mono);">Laplace Smoothing k=1</span>
+      <span style="background:#242b36; padding:6px 14px; border-radius:9999px; font-size:12px; font-family:var(--mono);">Log-Space Summation</span>
+    </div>
+  </header>
+
+  <!-- Input -->
+  <div class="card">
+    <label class="input-label">MESSAGE TO CLASSIFY</label>
+    <textarea id="msgInput" placeholder="Type or paste any message here..."></textarea>
+    <div class="btn-row">
+      <button id="classifyBtn" onclick="runClassify()">Classify Message</button>
+      <button id="clearBtn" onclick="clearAll()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="card" id="resultSection">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div>
+        <div style="font-family:var(--mono); font-size:12px; color:var(--chalk-dim);">SPAM SCORE</div>
+        <div id="verdictPct" class="verdict-pct">—</div>
+        <div id="verdictBadge" class="verdict-badge">—</div>
+      </div>
+    </div>
+
+    <div class="meter-bar-bg">
+      <div id="hamFill"></div>
+      <div id="spamFill"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; font-size:12px; font-family:var(--mono); color:var(--chalk-dim);">
+      <span>HAM</span><span>50%</span><span>SPAM</span>
+    </div>
+
+    <button id="mathToggleBtn" onclick="toggleMath()" style="margin-top:20px; background:transparent; border:1px solid var(--chalk-faint); color:var(--chalk-dim); padding:10px 20px; border-radius:8px; font-family:var(--mono); font-size:13px;">
+      ▶ Show Math
+    </button>
+
+    <div id="mathPanel" style="display:none; margin-top:20px;">
+      <div class="math-section"><div class="math-heading">① TOKENISATION</div><div class="token-wrap" id="tokenDisplay"></div></div>
+      <div class="math-section"><div class="math-heading">② PER-WORD LIKELIHOODS (LAPLACE K=1)</div><table class="lk-table"><thead><tr><th>Word</th><th>#Spam</th><th>#Ham</th><th>P(w|Spam)</th><th>P(w|Ham)</th><th>P(Spam|w)</th><th>Weight</th></tr></thead><tbody id="lkTableBody"></tbody></table></div>
+      <div class="math-section"><div class="math-heading">③ FINAL CALCULATION</div><div class="formula-box" id="formulaBox"></div></div>
+    </div>
+  </div>
+
+  <!-- Training Dataset - Two clean columns -->
+  <div class="card">
+    <div class="math-heading">TRAINING DATASET (CLICK TO TEST)</div>
+    <div class="dataset-cols">
+      <div>
+        <div class="dataset-col-head spam">Spam (5)</div>
+        <div class="dataset-item" onclick="loadMsg('Win money now')">Win money now</div>
+        <div class="dataset-item" onclick="loadMsg('Free prize available')">Free prize available</div>
+        <div class="dataset-item" onclick="loadMsg('Congratulations you won')">Congratulations you won</div>
+        <div class="dataset-item" onclick="loadMsg('Claim your free gift')">Claim your free gift</div>
+        <div class="dataset-item" onclick="loadMsg('Win a luxury prize')">Win a luxury prize</div>
+      </div>
+      <div>
+        <div class="dataset-col-head ham">Ham (5)</div>
+        <div class="dataset-item" onclick="loadMsg('Meeting at 3 PM')">Meeting at 3 PM</div>
+        <div class="dataset-item" onclick="loadMsg('Patient report attached')">Patient report attached</div>
+        <div class="dataset-item" onclick="loadMsg('Project discussion tomorrow')">Project discussion tomorrow</div>
+        <div class="dataset-item" onclick="loadMsg('Hello see you soon')">Hello see you soon</div>
+        <div class="dataset-item" onclick="loadMsg('Can we meet today')">Can we meet today</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Performance Card -->
+  <div class="card" id="performanceCard" style="display:none;">
+    <div class="math-heading">MODEL PERFORMANCE • 80/20 TRAIN-TEST SPLIT</div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px,1fr)); gap:14px; margin-bottom:20px;">
+      <div style="background:var(--surface2); border-radius:12px; padding:14px; text-align:center;">
+        <div style="font-size:11px; color:var(--chalk-dim);">ACCURACY</div>
+        <div id="perfAccuracy" style="font-size:32px; font-weight:500; color:var(--green);">—</div>
+      </div>
+      <div style="background:var(--surface2); border-radius:12px; padding:14px; text-align:center;">
+        <div style="font-size:11px; color:var(--chalk-dim);">PRECISION</div>
+        <div id="perfPrecision" style="font-size:32px; font-weight:500; color:var(--red);">—</div>
+      </div>
+      <div style="background:var(--surface2); border-radius:12px; padding:14px; text-align:center;">
+        <div style="font-size:11px; color:var(--chalk-dim);">RECALL</div>
+        <div id="perfRecall" style="font-size:32px; font-weight:500; color:var(--green);">—</div>
+      </div>
+      <div style="background:var(--surface2); border-radius:12px; padding:14px; text-align:center;">
+        <div style="font-size:11px; color:var(--chalk-dim);">F1-SCORE</div>
+        <div id="perfF1" style="font-size:32px; font-weight:500; color:var(--blue);">—</div>
+      </div>
+    </div>
+    <div class="math-heading">CONFUSION MATRIX</div>
+    <table id="cmTable" style="width:100%; border-collapse:collapse; font-family:var(--mono); text-align:center; font-size:14px;">
+      <thead><tr style="background:var(--surface);"><th style="padding:10px; border:1px solid var(--border);">Actual ↓ / Predicted →</th><th style="color:var(--green); padding:10px; border:1px solid var(--border);">HAM</th><th style="color:var(--red); padding:10px; border:1px solid var(--border);">SPAM</th></tr></thead>
+      <tbody id="cmBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<footer style="text-align:center; margin-top:40px; color:var(--chalk-faint); font-family:var(--mono); font-size:12px;">
+  Naive Bayes • Unbiased Priors • Flask Backend • Python Engine
+</footer>
+
+<script>
+let mathVisible = false;
+
+async function runClassify() {
+  const msg = document.getElementById('msgInput').value.trim();
+  if (!msg) return;
+
+  try {
+    const res = await fetch('/classify', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+    const data = await res.json();
+    renderResult(data);
+  } catch(e) {}
+}
+
+function renderResult(r) {
+  document.getElementById('resultSection').style.display = 'block';
+
+  const pct = r.spam_pct;
+  const isSpam = pct >= 50;
+
+  document.getElementById('verdictPct').textContent = pct.toFixed(2) + '%';
+  document.getElementById('verdictPct').style.color = isSpam ? 'var(--red)' : 'var(--green)';
+
+  const badge = document.getElementById('verdictBadge');
+  badge.textContent = isSpam ? 'SPAM' : 'HAM';
+  badge.style.background = isSpam ? 'rgba(232,99,90,0.18)' : 'rgba(94,201,139,0.18)';
+  badge.style.color = isSpam ? 'var(--red)' : 'var(--green)';
+
+  // FIXED PROGRESS BAR
+  if (isSpam) {
+    document.getElementById('hamFill').style.width = '0%';
+    document.getElementById('spamFill').style.width = ((pct - 50) * 2) + '%';
+  } else {
+    document.getElementById('spamFill').style.width = '0%';
+    document.getElementById('hamFill').style.width = ((50 - pct) * 2) + '%';
+  }
+
+  renderTokens(r.tokens);
+  renderLikelihoodTable(r.word_data);
+  renderFormula(r);
+}
+
+function renderTokens(tokens) {
+  document.getElementById('tokenDisplay').innerHTML = tokens.map(t => `<span class="token">${t}</span>`).join('');
+}
+
+function renderLikelihoodTable(wordData) {
+  let html = '';
+  wordData.forEach(d => {
+    const barColor = d.p_spam_given_word >= 50 ? 'var(--red)' : 'var(--green)';
+    html += `<tr>
+      <td>"${d.word}"</td>
+      <td>${d.spam_count}</td>
+      <td>${d.ham_count}</td>
+      <td>${d.p_word_spam}</td>
+      <td>${d.p_word_ham}</td>
+      <td style="color:${barColor}">${d.p_spam_given_word}%</td>
+      <td><div style="height:6px;background:#333;border-radius:3px;width:80px;display:inline-block"><div style="height:100%;width:${d.p_spam_given_word}%;background:${barColor};border-radius:3px"></div></div></td>
+    </tr>`;
+  });
+  document.getElementById('lkTableBody').innerHTML = html;
+}
+
+function renderFormula(r) {
+  const html = `-- Priors cancel (P(S)=P(H)=0.5)\n` +
+               `log P(W|Spam) = ${r.log_spam}\n` +
+               `log P(W|Ham)  = ${r.log_ham}\n\n` +
+               `Raw Spam = exp(${r.log_spam}) = ${r.raw_spam}\n` +
+               `Raw Ham  = exp(${r.log_ham})  = ${r.raw_ham}\n\n` +
+               `Spam % = ${r.spam_pct}%`;
+  document.getElementById('formulaBox').innerHTML = html.replace(/\n/g, '<br>');
+}
+
+function toggleMath() {
+  mathVisible = !mathVisible;
+  document.getElementById('mathPanel').style.display = mathVisible ? 'block' : 'none';
+  document.getElementById('mathToggleBtn').textContent = mathVisible ? '▼ Hide Math' : '▶ Show Math';
+}
+
+function clearAll() {
+  document.getElementById('msgInput').value = '';
+  document.getElementById('resultSection').style.display = 'none';
+}
+
+function loadMsg(text) {
+  document.getElementById('msgInput').value = text;
+  runClassify();
+}
+
+// Load performance card
+async function loadPerformance() {
+  try {
+    const res = await fetch('/evaluate');
+    const data = await res.json();
+    document.getElementById('perfAccuracy').textContent = data.accuracy + '%';
+    document.getElementById('perfPrecision').textContent = data.precision + '%';
+    document.getElementById('perfRecall').textContent = data.recall + '%';
+    document.getElementById('perfF1').textContent = data.f1 + '%';
+
+    const cm = data.confusion_matrix;
+    document.getElementById('cmBody').innerHTML = `
+      <tr><td style="padding:12px;border:1px solid var(--border);color:var(--green)">HAM</td><td style="padding:12px;border:1px solid var(--border)">${cm[0][0]}</td><td style="padding:12px;border:1px solid var(--border);color:var(--red)">${cm[0][1]}</td></tr>
+      <tr><td style="padding:12px;border:1px solid var(--border);color:var(--red)">SPAM</td><td style="padding:12px;border:1px solid var(--border)">${cm[1][0]}</td><td style="padding:12px;border:1px solid var(--border);color:var(--green)">${cm[1][1]}</td></tr>`;
+    document.getElementById('performanceCard').style.display = 'block';
+  } catch(e) {}
+}
+
+window.addEventListener('load', loadPerformance);
+</script>
+</body>
+</html>
