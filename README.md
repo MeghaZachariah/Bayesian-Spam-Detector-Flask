@@ -5,7 +5,7 @@ This repository features a professional-grade **SMS Spam Filter** developed as p
 
 <br>
 
-## 🖥️ User Interface & Experience
+##  User Interface & Experience
 
 <p align="center">
   <img src="ss/image_b8e7c7.png" width="800" title="Bayesian Spam Detector Home">
@@ -15,7 +15,7 @@ The application utilizes a professional, blackboard-themed **Flask interface**. 
 
 <br>
 
-## 🔍 Explainable AI: The "Show Math" Panel
+##  Explainable AI: The "Show Math" Panel
 
 <p align="center">
   <img src="ss/image_b8e7a5.png" width="800" title="Transparency Panel">
@@ -29,7 +29,7 @@ To ensure the model's logic is verifiable against manual calculations, I enginee
 
 <br>
 
-## 📊 Performance & Evaluation
+##  Performance & Evaluation
 
 <p align="center">
   <img src="ss/image_b8e4e1.png" width="800" title="Model Performance Card">
@@ -44,7 +44,7 @@ The system was trained on the **UCI SMS Spam Collection** (5,572 messages) using
 
 <br>
 
-## 🛠️ System Architecture
+##  System Architecture
 
 <p align="center">
   <img src="ss/image_b8e808.png" width="300" title="Directory Structure">
@@ -59,7 +59,7 @@ The project is structured for modularity to ensure a clean separation between th
 
 <br>
 
-## 🚀 Quick Start
+##  Quick Start
 
 1. **Clone the Repository:**
    ```bash
