@@ -53,7 +53,7 @@ def p_word_given_ham(word: str) -> float:
     return (ham_freq.get(word, 0) + 1) / (H + V)
 
 # =============================================================================
-# 4. CLASSIFIER (UPDATED - matches your HTML exactly)
+# 4. CLASSIFIER (FIXED - handles underflow safely)
 # =============================================================================
 def classify(message: str) -> dict:
     tokens = tokenize(message)
@@ -86,10 +86,15 @@ def classify(message: str) -> dict:
             "is_known": word in vocab
         })
 
+    # FIXED: Safe conversion from log-space
     try:
         raw_spam = math.exp(log_spam)
         raw_ham  = math.exp(log_ham)
-        spam_pct = (raw_spam / (raw_spam + raw_ham)) * 100
+        total = raw_spam + raw_ham
+        if total == 0:  # underflow case
+            spam_pct = 100.0 if log_spam > log_ham else 0.0
+        else:
+            spam_pct = (raw_spam / total) * 100
     except OverflowError:
         spam_pct = 100.0 if log_spam > log_ham else 0.0
 
@@ -99,8 +104,8 @@ def classify(message: str) -> dict:
         "word_data": word_data,
         "log_spam": round(log_spam, 6),
         "log_ham": round(log_ham, 6),
-        "raw_spam": round(raw_spam, 8),
-        "raw_ham": round(raw_ham, 8),
+        "raw_spam": round(raw_spam, 8) if 'raw_spam' in locals() else 0,
+        "raw_ham": round(raw_ham, 8) if 'raw_ham' in locals() else 0,
         "complexity": "O(n)"
     }
 
